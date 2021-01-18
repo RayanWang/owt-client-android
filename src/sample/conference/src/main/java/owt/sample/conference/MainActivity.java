@@ -235,10 +235,22 @@ public class MainActivity extends AppCompatActivity
                 localStream = new LocalStream(capturer,
                         new MediaConstraints.AudioTrackConstraints());
                 localStream.attach(localRenderer);
+                localStream.disableVideo();
 
                 ActionCallback<Publication> callback = new ActionCallback<Publication>() {
                     @Override
                     public void onSuccess(final Publication result) {
+                        result.mute(MediaConstraints.TrackKind.VIDEO, new ActionCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                Log.d(TAG, "[Publish] Mute video track success");
+                            }
+
+                            @Override
+                            public void onFailure(OwtError error) {
+                                Log.e(TAG, "[Publish] Mute video track fail with error=" + error);
+                            }
+                        });
                         runOnUiThread(() -> {
                             localRenderer.setVisibility(View.VISIBLE);
 
@@ -473,9 +485,11 @@ public class MainActivity extends AppCompatActivity
     }
 
     private void requestPermission() {
-        String[] permissions = new String[]{Manifest.permission.CAMERA,
-                Manifest.permission.RECORD_AUDIO,
+        String[] permissions = new String[]{Manifest.permission.RECORD_AUDIO,
                 Manifest.permission.READ_EXTERNAL_STORAGE};
+//        String[] permissions = new String[]{Manifest.permission.CAMERA,
+//                Manifest.permission.RECORD_AUDIO,
+//                Manifest.permission.READ_EXTERNAL_STORAGE};
 
         for (String permission : permissions) {
             if (ContextCompat.checkSelfPermission(MainActivity.this,
@@ -494,12 +508,18 @@ public class MainActivity extends AppCompatActivity
     public void onRequestPermissionsResult(int requestCode, String[] permissions,
             int[] grantResults) {
         if (requestCode == OWT_REQUEST_CODE
-                && grantResults.length == 3
+                && grantResults.length == 2
                 && grantResults[0] == PERMISSION_GRANTED
-                && grantResults[1] == PERMISSION_GRANTED
-                && grantResults[2] == PERMISSION_GRANTED) {
+                && grantResults[1] == PERMISSION_GRANTED) {
             onConnectSucceed();
         }
+//        if (requestCode == OWT_REQUEST_CODE
+//                && grantResults.length == 3
+//                && grantResults[0] == PERMISSION_GRANTED
+//                && grantResults[1] == PERMISSION_GRANTED
+//                && grantResults[2] == PERMISSION_GRANTED) {
+//            onConnectSucceed();
+//        }
     }
 
     private void onConnectSucceed() {
@@ -729,6 +749,17 @@ public class MainActivity extends AppCompatActivity
                 new ActionCallback<Subscription>() {
                     @Override
                     public void onSuccess(Subscription result) {
+                        result.mute(MediaConstraints.TrackKind.VIDEO, new ActionCallback<Void>() {
+                            @Override
+                            public void onSuccess(Void result) {
+                                Log.d(TAG, "[Subscribe] Mute video track success");
+                            }
+
+                            @Override
+                            public void onFailure(OwtError error) {
+                                Log.e(TAG, "[Subscribe] Mute video track fail with error=" + error);
+                            }
+                        });
                         MainActivity.this.subscription = result;
                         MainActivity.this.remoteForwardStream = remoteStream;
                         remoteStream.attach(remoteRenderer);
@@ -835,9 +866,9 @@ public class MainActivity extends AppCompatActivity
 
         for (PublicationSettings.VideoPublicationSettings videoPublicationSetting :
                 remoteStream.publicationSettings.videoPublicationSettings) {
-            if (videoCodecMap.containsKey(remoteStream.id())){
+            if (videoCodecMap.containsKey(remoteStream.id())) {
                 videoCodecMap.get(remoteStream.id()).add(videoPublicationSetting.codec.name.name());
-            }else{
+            } else {
                 videoCodecList.add(videoPublicationSetting.codec.name.name());
                 videoCodecMap.put(remoteStream.id(), videoCodecList);
             }
